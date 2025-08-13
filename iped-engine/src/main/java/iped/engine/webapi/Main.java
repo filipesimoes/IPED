@@ -19,6 +19,9 @@ import iped.engine.Version;
  *
  */
 public class Main {
+
+    private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
+
     /**
      * Starts Grizzly HTTP server exposing JAX-RS resources defined in this
      * application.
@@ -64,37 +67,42 @@ public class Main {
      * @throws IOException
      */
     public static void main(String[] args) throws Exception {
-        String host = "0.0.0.0";
-        int port = 8080;
-        String urlToAskSources = null;
+        try {
+            String host = "0.0.0.0";
+            int port = 8080;
+            String urlToAskSources = null;
 
-        for (String arg : args) {
-            if (arg.startsWith("--host=")) {
-                host = arg.substring("--host=".length());
+            for (String arg : args) {
+                if (arg.startsWith("--host=")) {
+                    host = arg.substring("--host=".length());
 
-            } else if (arg.startsWith("--port=")) {
-                port = Integer.parseInt(arg.substring("--port=".length()));
+                } else if (arg.startsWith("--port=")) {
+                    port = Integer.parseInt(arg.substring("--port=".length()));
 
-            } else if (arg.startsWith("--sources=")) {
-                urlToAskSources = arg.substring("--sources=".length());
+                } else if (arg.startsWith("--sources=")) {
+                    urlToAskSources = arg.substring("--sources=".length());
 
-            } else {
+                } else {
+                    printHelp();
+                    System.exit(-1);
+                }
+            }
+            if (urlToAskSources == null) {
+                System.err.println("missing --sources option");
                 printHelp();
                 System.exit(-1);
             }
+            startServer(host, port, urlToAskSources);
+            System.out.println(String.format("Jersey app started with WADL available at \n%sapplication.wadl\n",
+                    "http://" + host + ":" + port + "/"));
+        } catch (Throwable e) {
+            LOGGER.log(Level.SEVERE, "Start server failed", e);
+            LOGGER.log(Level.SEVERE, "With cause:", e.getCause());
         }
-        if (urlToAskSources == null) {
-            System.err.println("missing --sources option");
-            printHelp();
-            System.exit(-1);
-        }
-        startServer(host, port, urlToAskSources);
-        System.out.println(String.format("Jersey app started with WADL available at \n%sapplication.wadl\n",
-                "http://" + host + ":" + port + "/"));
     }
 
     public static void printHelp() {
-        System.out.println("--sources=(URL|Path)\tfile or url with json: [{id, path}...]");
+        System.out.println("--sources=(URL|Path)\tfile or url with json: {sources: [{id, path}...], configuration}");
         System.out.println("--host=\t\tdefault:0.0.0.0");
         System.out.println("--port=\t\tdefault:8080");
     }
