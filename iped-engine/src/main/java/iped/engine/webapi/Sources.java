@@ -25,6 +25,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
 import org.sleuthkit.datamodel.TskCoreException;
+import java.util.logging.Logger;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -39,6 +40,9 @@ import iped.engine.webapi.json.SourceJSON;
 @Api(value = "Sources")
 @Path("sources")
 public class Sources {
+
+    private static Logger LOGGER = Logger.getLogger(Sources.class.getName());
+
     public static IPEDMultiSource multiSource = null;
     public static Map<Integer, String> sourceIntToString;
     public static Map<String, Integer> sourceStringToInt;
@@ -49,19 +53,24 @@ public class Sources {
         sourceStringToInt = new HashMap<String, Integer>();
         sourcePathToStringID = new HashMap<String, String>();
 
-        boolean confInited = false;
         List<IIPEDSource> sources = new ArrayList<IIPEDSource>();
-        JSONArray arr = askSources(urlToAskSources);
-        for (Object object : arr) {
+        JSONObject sourcesConfig = askSources(urlToAskSources);
+        String configurationPath = (String) sourcesConfig.get("configuration");
+        if (configurationPath != null) {
+            LOGGER.info("Using configuration path: " + configurationPath);
+            Configuration.getInstance().loadConfigurables(configurationPath, true);
+        }
+
+        JSONArray sourcesArr = (JSONArray) sourcesConfig.get("sources");
+        for (Object object : sourcesArr) {
             JSONObject jsonobj = (JSONObject) object;
             String id = (String) jsonobj.get("id");
             File file = new File((String) jsonobj.get("path"));
 
             sourcePathToStringID.put(file.toString(), id);
 
-            if (!confInited) {
-                Configuration.getInstance().loadConfigurables(file + File.separator + "iped", true); //$NON-NLS-1$
-                confInited = true;
+            if (configurationPath == null) {
+                configurationPath = file.getAbsolutePath() + File.separator + "iped";
             }
 
             IIPEDSource source = new IPEDSource(file);
@@ -141,17 +150,17 @@ public class Sources {
         return result;
     }
 
-    private static JSONArray askSources(String urlToAskSources)
+    private static JSONObject askSources(String urlToAskSources)
             throws MalformedURLException, IOException, ParseException {
         InputStream in;
-        JSONArray result = new JSONArray();
+        JSONObject result = new JSONObject();
         if ((new File(urlToAskSources)).exists()) {
             in = new FileInputStream(urlToAskSources);
         } else {
             in = (new URL(urlToAskSources)).openConnection().getInputStream();
         }
         try {
-            result = (JSONArray) JSONValue.parseWithException(new InputStreamReader(in));
+            result = (JSONObject) JSONValue.parseWithException(new InputStreamReader(in));
         } finally {
             in.close();
         }
