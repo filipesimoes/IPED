@@ -31,6 +31,9 @@ public class Search {
     @DefaultValue("")
     @QueryParam("sourceID")
     String sourceID;
+    @DefaultValue("")
+    @QueryParam("sort")
+    String sort;
 
     @ApiOperation(value = "Search documents")
     @GET
@@ -38,15 +41,25 @@ public class Search {
     public SourceToIDsJSON doSearch() throws Exception {
         String escapeq = q.replaceAll("/", "\\\\/");
         List<DocIDJSON> docs = new ArrayList<DocIDJSON>();
+        
+        String[] sortFields = null;
+        if (sort != null && !sort.trim().isEmpty()) {
+            sortFields = sort.split(",");
+        }
+
         if (sourceID.equals("")) {
-            IPEDSearcher searcher = new IPEDSearcher(Sources.multiSource, escapeq);
+            IPEDSearcher searcher = sortFields != null ? 
+                new IPEDSearcher(Sources.multiSource, escapeq, sortFields) : 
+                new IPEDSearcher(Sources.multiSource, escapeq);
             IMultiSearchResult result = searcher.multiSearch();
             for (IItemId id : result.getIterator()) {
                 docs.add(new DocIDJSON(Sources.sourceIntToString.get(id.getSourceId()), id.getId()));
             }
         } else {
             IPEDSource source = (IPEDSource) Sources.getSource(sourceID);
-            IIPEDSearcher searcher = new IPEDSearcher(source, escapeq);
+            IIPEDSearcher searcher = sortFields != null ? 
+                new IPEDSearcher(source, escapeq, sortFields) : 
+                new IPEDSearcher(source, escapeq);
             SearchResult result = searcher.search();
             for (int id : result.getIds()) {
                 docs.add(new DocIDJSON(sourceID, id));

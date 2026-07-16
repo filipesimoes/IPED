@@ -78,13 +78,48 @@ public class IPEDSearcher implements IIPEDSearcher {
         setSorting(sort);
     }
 
-    // TODO improve this to handle other field types
     private void setSorting(String... sort) {
-        SortField[] fields = new SortField[sort.length];
-        for (int i = 0; i < fields.length; i++) {
-            fields[i] = new SortField(sort[i], SortField.Type.STRING);
+        if (sort == null || sort.length == 0) {
+            this.sort = null;
+            return;
         }
-        this.sort = new Sort(fields);
+        java.util.List<SortField> fields = new java.util.ArrayList<>();
+        for (String sortField : sort) {
+            if (sortField == null || sortField.trim().isEmpty()) {
+                continue;
+            }
+            sortField = sortField.trim();
+            boolean reverse = false;
+            if (sortField.startsWith("-")) {
+                reverse = true;
+                sortField = sortField.substring(1).trim();
+            } else if (sortField.startsWith("+")) {
+                sortField = sortField.substring(1).trim();
+            }
+            
+            if (sortField.equalsIgnoreCase("score") || sortField.equalsIgnoreCase("similarity")) {
+                fields.add(new SortField(null, SortField.Type.SCORE, reverse));
+            } else if (sortField.equalsIgnoreCase("doc")) {
+                fields.add(new SortField(null, SortField.Type.DOC, reverse));
+            } else {
+                SortField.Type type = SortField.Type.STRING;
+                if (IndexItem.isInteger(sortField)) {
+                    type = SortField.Type.INT;
+                } else if (IndexItem.isLong(sortField) || IndexItem.LENGTH.equals(sortField) || "size".equals(sortField)) {
+                    type = SortField.Type.LONG;
+                } else if (IndexItem.isFloat(sortField)) {
+                    type = SortField.Type.FLOAT;
+                } else if (IndexItem.isDouble(sortField)) {
+                    type = SortField.Type.DOUBLE;
+                }
+                fields.add(new SortField(sortField, type, reverse));
+            }
+        }
+        if (fields.isEmpty()) {
+            this.sort = null;
+        } else {
+            this.sort = new Sort(fields.toArray(new SortField[0]));
+        }
     }
 
     public void setTreeQuery(boolean treeQuery) {
@@ -161,8 +196,8 @@ public class IPEDSearcher implements IIPEDSearcher {
         } catch (InterruptedIOException e) {
             // e.printStackTrace();
         }
-        // do not compute scores (slow) when result set is large
-        if (noScore || collector.getTotalHits() > MAX_SIZE_TO_SCORE || canceled)
+        // do not compute scores (slow) when result set is large and no custom sort is requested
+        if (noScore || (this.sort == null && collector.getTotalHits() > MAX_SIZE_TO_SCORE) || canceled)
             return collector.getSearchResults();
 
         // otherwise get results computing score
