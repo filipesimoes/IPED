@@ -53,6 +53,7 @@ log_info "Configurando repositórios de terceiros..."
 add-apt-repository ppa:deadsnakes/ppa -y
 
 # BellSoft Java JDK
+log_info "Configurando repositório BellSoft Java JDK..."
 mkdir -p /etc/apt/keyrings
 wget -q -O - https://download.bell-sw.com/pki/GPG-KEY-bellsoft | gpg --dearmor -o /etc/apt/keyrings/bellsoft.gpg
 echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/bellsoft.gpg] https://apt.bell-sw.com/ stable main" > /etc/apt/sources.list.d/bellsoft.list
@@ -151,7 +152,7 @@ git clone --branch "7.1.1-21" https://github.com/ImageMagick/ImageMagick
 # ==============================================================================
 # Configurações do repositório/release
 export IPED_REPO_OWNER="${IPED_REPO_OWNER:-filipesimoes}"
-export IPED_RELEASE_VERSION="${IPED_RELEASE_VERSION:-4.3.1}"
+export IPED_RELEASE_VERSION="${IPED_RELEASE_VERSION:-4.4.0-forked-1.1.0}"
 export IPED_RELEASE_FILE="${IPED_RELEASE_FILE:-iped-${IPED_RELEASE_VERSION}.tar.gz}"
 
 log_info "Baixando release do IPED de ${IPED_REPO_OWNER}/${IPED_RELEASE_VERSION}..."
