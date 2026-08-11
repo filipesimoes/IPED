@@ -103,7 +103,7 @@ public class SleuthkitReader extends DataSourceReader {
     public static final String PASSWORD_PER_IMAGE = "data/PasswordPerImage.txt";
 
     // TODO update @deleteDatasource() when updating TSK
-    public static final String MIN_TSK_VER_TESTED = "4.13.0";
+    public static final String MIN_TSK_VER_TESTED = "4.12.0";
     public static final String MAX_TSK_VER_TESTED = "4.15.0";
     public static final List<String> UNTESTED_TSK_VERS = Arrays.asList("4.13.", "4.14.");
 
